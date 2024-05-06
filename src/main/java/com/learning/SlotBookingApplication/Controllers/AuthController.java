@@ -39,13 +39,13 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<String> logout(@RequestBody ValidateTokenRequestDTO requestDTO){
+    public ResponseEntity<String> logout(@RequestBody ValidateTokenRequestDTO requestDTO) throws NotFoundException{
         String response  = authService.logout(requestDTO.getToken(), requestDTO.getUserId());
         return ResponseEntity.ok(response);
     }
 
     @PostMapping("/validate")
-    public ResponseEntity<SessionStatus> validate(@RequestBody ValidateTokenRequestDTO requestDTO){
+    public ResponseEntity<SessionStatus> validate(@RequestBody ValidateTokenRequestDTO requestDTO) throws NotFoundException{
 
         SessionStatus sessionStatus = authService.validateToken(requestDTO.getToken(), requestDTO.getUserId());
         return ResponseEntity.ok(sessionStatus);

@@ -28,9 +28,10 @@ public class AuthService {
     private BCryptPasswordEncoder bCryptPasswordEncoder;
     private Algorithm algorithm;
     private SessionRepository sessionRepository;
-    public AuthService(UserRepository userRepository, SessionRepository sessionRepository){
+    public AuthService(UserRepository userRepository, SessionRepository sessionRepository, BCryptPasswordEncoder bCryptPasswordEncoder){
         this.userRepository = userRepository;
         this.sessionRepository = sessionRepository;
+        this.bCryptPasswordEncoder = bCryptPasswordEncoder;
         this.algorithm = Algorithm.HMAC256("secretKeyForLoginToken");
     }
     public String createNewUser(String name, String email, String phoneNumber, String password) throws AlreadyExistsException {
@@ -58,8 +59,8 @@ public class AuthService {
         }
 
         User user = optionalUser.get();
-        if(!bCryptPasswordEncoder.matches(user.getPassword(), password)){
-            throw new InvalidCredentialException("Wrong password!");
+        if(!bCryptPasswordEncoder.matches(password, user.getPassword())){
+            throw new InvalidCredentialException("Wrong password");
         }
 
         List<String> claims = new ArrayList<>();
@@ -84,8 +85,13 @@ public class AuthService {
     }
 
 
-    public SessionStatus validateToken(String token, Long userId) {
-        Optional<Session> optionalSession = sessionRepository.findByTokenAndUser_ID(token, userId);
+    public SessionStatus validateToken(String token, Long userId) throws NotFoundException {
+        Optional<User> optionalUser = userRepository.findById(userId);
+        if(optionalUser.isEmpty()){
+            throw new NotFoundException("Error: no user found!");
+        }
+        User user = optionalUser.get();
+        Optional<Session> optionalSession = sessionRepository.findByTokenAndUser(token, user);
         if(optionalSession.isEmpty()){
             return SessionStatus.ENDED;
         }
@@ -97,8 +103,13 @@ public class AuthService {
 
         return SessionStatus.ACTIVE;
     }
-    public String logout(String token, Long userId) {
-        Optional<Session> optionalSession = sessionRepository.findByTokenAndUser_ID(token, userId);
+    public String logout(String token, Long userId) throws NotFoundException {
+        Optional<User> optionalUser = userRepository.findById(userId);
+        if(optionalUser.isEmpty()){
+            throw new NotFoundException("Error: no user found!");
+        }
+        User user = optionalUser.get();
+        Optional<Session> optionalSession = sessionRepository.findByTokenAndUser(token, user);
         if(optionalSession.isEmpty()){
             return "logged out successfully!";
         }
